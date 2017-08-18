@@ -29,7 +29,15 @@ async def members(request):
 
 
 async def rooms(request):
-    return web.json_response([])
+    handler = request.app.chat_handler
+    nickname = request.query.get('nickname')
+    return web.json_response([{
+        'name': room.name,
+        'present': room.is_member(nickname)
+    } for room in handler.rooms.values()])
+
+
+
 
 
 def create_app(loop=None, chat_handler=None):

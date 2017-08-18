@@ -39,13 +39,25 @@ async def test_get_list_of_nicknames(test_client):
 
 
 async def test_get_previous_messages_on_room_join(test_client):
-    room_name = ChatHandler.GLOBAL_ROOM_NAME
     previous_message = {'message': 'Test', 'nickname': 'Alibaba'}
-    room = ChatRoom(room_name, messages=[previous_message])
+    room = ChatRoom('global', messages=[previous_message])
     handler = ChatHandler()
-    handler.rooms[room_name] = room
+    handler.rooms['global'] = room
 
     client = await test_client(create_app, chat_handler=handler)
     connection = await client.ws_connect('/ws?nickname=JohnDoe')
     data = await connection.receive_json(timeout=0.2)
     assert data == previous_message
+
+async def test_get_list_of_rooms(test_client):
+    handler = ChatHandler()
+    handler.rooms['test'] = ChatRoom('test')
+
+    client = await test_client(create_app, chat_handler=handler)
+
+    response = await client.get('/rooms')
+    data = await response.json()
+    assert data == [{
+        'name': 'test',
+        'present': False
+    }]

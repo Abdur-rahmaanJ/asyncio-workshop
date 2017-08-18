@@ -1,4 +1,5 @@
 import json
+from asyncio import wait
 
 from aiohttp import (
     web,
@@ -36,8 +37,8 @@ class ChatRoom(object):
 
     async def send_message(self, data):
         data['room'] = self.name
+        self.messages.append(data)
         for member in self.members.values():
-            self.messages.append(data)
             await member.send_message(data)
 
 
@@ -63,7 +64,7 @@ class ChatHandler(object):
 
     async def handle_error(self, msg, member):
         print('ws connection closed with exception %s' % member.connection.exception())
-        return self.handle_disconnect(msg, member)
+        return self.handle_disconnect(member)
 
     async def handle_text_message(self, msg, member):
         data = json.loads(msg.data)
@@ -73,11 +74,13 @@ class ChatHandler(object):
         if room and room.is_member(member.nickname):
             await room.send_message({
                 'message': message,
-                'nickname': member.nickname
+                'from': member.nickname
             })
 
-    async def handle_disconnect(self, msg, member):
-        for room in self.rooms:
+    async def handle_disconnect(self, member):
+        del self.members[member.nickname]
+
+        for room in self.rooms.values():
             await room.remove_member(member)
 
     async def handle(self, request):
@@ -89,11 +92,12 @@ class ChatHandler(object):
         # during first phase
         await self.join_chat_room(self.GLOBAL_ROOM_NAME, member.nickname)
 
-        async for msg in ws:
-            if msg.type == WSMsgType.TEXT:
-                await self.handle_text_message(msg, member)
-            elif msg.type == WSMsgType.ERROR:
-                await self.handle_error(msg, member)
-            elif msg.type == WSMsgType.CLOSED:
-                await self.handle_disconnect(msg, member)
+        try:
+            async for msg in ws:
+                if msg.type == WSMsgType.TEXT:
+                    await self.handle_text_message(msg, member)
+                elif msg.type == WSMsgType.ERROR:
+                    await self.handle_error(msg, member)
+        finally:
+            await self.handle_disconnect(member)
         return ws
