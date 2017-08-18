@@ -23,3 +23,15 @@ async def test_other_user_receives_message(test_client):
 
     assert response['message'] == message
 
+async def test_get_list_of_nicknames(test_client):
+    client = await test_client(create_app)
+
+    await client.ws_connect('/ws?nickname=JohnDoe')
+    await client.ws_connect('/ws?nickname=FooBar')
+
+    response = await client.get('/members')
+    data = await response.json()
+    assert data == [
+        'JohnDoe',
+        'FooBar'
+    ]
