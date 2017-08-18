@@ -26,13 +26,12 @@ async def test_other_user_receives_message(test_client):
     # lets swallow second user welcome message
     await second_connection.receive_json(timeout=0.2)
 
-
-
     message = 'abc'
     await first_connection.send_json({'message': message, 'from': 'JohnDoe'})
     response = await second_connection.receive_json(timeout=0.2)
 
     assert response['message'] == message
+
 
 async def test_get_list_of_nicknames(test_client):
     client = await test_client(create_app)
@@ -58,6 +57,7 @@ async def test_get_previous_messages_on_room_join(test_client):
     connection = await client.ws_connect('/ws?nickname=JohnDoe')
     data = await connection.receive_json(timeout=0.2)
     assert data == previous_message
+
 
 async def test_get_list_of_rooms(test_client):
     handler = ChatHandler()
