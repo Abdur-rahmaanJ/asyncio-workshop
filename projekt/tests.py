@@ -10,3 +10,16 @@ async def test_receives_sent_message(test_client):
     response = await connection.receive_json()
 
     assert response['message'] == message
+
+
+async def test_other_user_receives_message(test_client):
+    client = await test_client(create_app)
+    first_connection = await client.ws_connect('/ws?nickname=JohnDoe')
+    second_connection = await client.ws_connect('/ws?nickname=FooBar')
+
+    message = 'abc'
+    await first_connection.send_json({'message': message, 'from': 'JohnDoe'})
+    response = await second_connection.receive_json(timeout=0.2)
+
+    assert response['message'] == message
+
