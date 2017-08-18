@@ -27,10 +27,20 @@ class ChatRoom(object):
         self.members[member.nickname] = member
         for message in self.messages:
             await member.send_message(message)
+        await self.send_message({
+            'message': 'User {} joined room {}!'.format(member.nickname, self.name),
+            'room': self.name,
+            'from': 'Server'
+        })
 
     async def remove_member(self, nickname):
         if self.is_member(nickname):
             del self.members[nickname]
+            await self.send_message({
+                'message': 'User {} left room {}!'.format(nickname, self.name),
+                'room': self.name,
+                'from': 'Server'
+            })
 
     def is_member(self, nickname):
         return nickname in self.members
@@ -60,7 +70,7 @@ class ChatHandler(object):
     async def leave_chat_room(self, room_name, nickname):
         room = self.rooms.get(room_name)
         if room:
-            room.remove_member(nickname)
+            await room.remove_member(nickname)
 
     async def handle_error(self, msg, member):
         print('ws connection closed with exception %s' % member.connection.exception())
@@ -79,9 +89,8 @@ class ChatHandler(object):
 
     async def handle_disconnect(self, member):
         del self.members[member.nickname]
-
-        for room in self.rooms.values():
-            await room.remove_member(member)
+        for room_name in self.rooms:
+            await self.leave_chat_room(room_name, member.nickname)
 
     async def handle(self, request):
         ws = web.WebSocketResponse()

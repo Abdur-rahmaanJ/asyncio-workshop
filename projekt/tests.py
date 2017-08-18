@@ -6,6 +6,8 @@ async def test_receives_sent_message(test_client):
     client = await test_client(create_app)
     connection = await client.ws_connect('/ws?nickname=JohnDoe')
 
+    # lets swallow welcome message
+    await connection.receive_json(timeout=0.2)
     message = 'Hello, world!'
     await connection.send_json({'message': message, 'from': 'JohnDoe'})
     response = await connection.receive_json(timeout=0.2)
@@ -17,6 +19,14 @@ async def test_other_user_receives_message(test_client):
     client = await test_client(create_app)
     first_connection = await client.ws_connect('/ws?nickname=JohnDoe')
     second_connection = await client.ws_connect('/ws?nickname=FooBar')
+
+    # lets swallow welcome message
+    await second_connection.receive_json(timeout=0.2)
+
+    # lets swallow second user welcome message
+    await second_connection.receive_json(timeout=0.2)
+
+
 
     message = 'abc'
     await first_connection.send_json({'message': message, 'from': 'JohnDoe'})

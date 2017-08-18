@@ -37,7 +37,24 @@ async def rooms(request):
     } for room in handler.rooms.values()])
 
 
+async def join_room(request):
+    handler = request.app.chat_handler
+    nickname = request.query.get('nickname')
+    data = await request.post()
+    room_name = data.get('name')
+    if room_name and nickname:
+        await handler.join_chat_room(room_name, nickname)
+    return web.json_response({'status': 'success'})
 
+
+async def leave_room(request):
+    handler = request.app.chat_handler
+    nickname = request.query.get('nickname')
+    data = await request.post()
+    room_name = data.get('name')
+    if room_name and nickname:
+        await handler.leave_chat_room(room_name, nickname)
+    return web.json_response({'status': 'success'})
 
 
 def create_app(loop=None, chat_handler=None):
@@ -48,6 +65,9 @@ def create_app(loop=None, chat_handler=None):
     app.router.add_get('/', index)
     app.router.add_get('/members', members)
     app.router.add_get('/rooms', rooms)
+    app.router.add_post('/room', join_room)
+    app.router.add_post('/join-room', join_room)
+    app.router.add_post('/leave-room', leave_room)
     app.router.add_get('/style.css', css)
     app.router.add_get('/reconnecting-websocket.min.js', reconnecting_websocket)
     app.router.add_get('/ws', app.chat_handler.handle)
