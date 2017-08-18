@@ -1,7 +1,10 @@
+import json
+
 import asyncio
+import aiohttp_autoreload
 from aiohttp import (
     web,
-    WSMsgType,
+    WSMsgType
 )
 
 
@@ -17,9 +20,8 @@ async def websocket_handler(request):
         # msg.data - data received
 
         if msg.type == WSMsgType.TEXT:
-            await ws.send_json(
-                {'message': 'Hello, world!', 'from': 'anonymous'}
-            )
+            data = json.loads(msg.data)
+            await ws.send_json(data)
         elif msg.type == WSMsgType.ERROR:
             print('ws connection closed with exception %s' % ws.exception())
 
@@ -61,4 +63,5 @@ def create_app(loop=None):
 
 if __name__ == '__main__':
     app = create_app()
+    aiohttp_autoreload.start(app.loop)
     web.run_app(app, port=8080)
