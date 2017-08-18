@@ -8,12 +8,16 @@ from aiohttp import (
 )
 
 
+connections = set()
+
+
 async def websocket_handler(request):
     ws = web.WebSocketResponse()
     await ws.prepare(request)
 
     # ws.close() - closes connection
     # ws.send_str(str) - sends a str
+    connections.add(ws)
 
     async for msg in ws:
         # msg.type - type of a message. See WSMsgType
@@ -21,9 +25,13 @@ async def websocket_handler(request):
 
         if msg.type == WSMsgType.TEXT:
             data = json.loads(msg.data)
-            await ws.send_json(data)
+            for connection in connections:
+                await connection.send_json(data)
         elif msg.type == WSMsgType.ERROR:
             print('ws connection closed with exception %s' % ws.exception())
+        elif msg.type == WSMsgType.CLOSED:
+            print('closing connection')
+            connections.remove(ws)
 
     return ws
 
