@@ -1,9 +1,9 @@
 import json
-from asyncio import wait
+import asyncio
 
 from aiohttp import (
     web,
-    WSMsgType
+    WSMsgType,
 )
 
 
@@ -76,7 +76,13 @@ class ChatHandler(object):
         if room:
             await room.remove_member(nickname)
             if room.empty:
-                del self.rooms[room_name]
+                loop = asyncio.get_event_loop()
+                loop.call_later(15, self.remove_room_if_empty, room_name)
+
+    def remove_room_if_empty(self, room_name):
+        room = self.rooms.get(room_name)
+        if room and room.empty:
+            del self.rooms[room_name]
 
     async def handle_error(self, msg, member):
         print('ws connection closed with exception %s' % member.connection.exception())
