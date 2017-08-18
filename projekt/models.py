@@ -23,6 +23,10 @@ class ChatRoom(object):
         self.members = members or {}
         self.messages = messages or []
 
+    @property
+    def empty(self):
+        return len(self.members) == 0
+
     async def add_member(self, member):
         self.members[member.nickname] = member
         for message in self.messages:
@@ -71,6 +75,8 @@ class ChatHandler(object):
         room = self.rooms.get(room_name)
         if room:
             await room.remove_member(nickname)
+            if room.empty:
+                del self.rooms[room_name]
 
     async def handle_error(self, msg, member):
         print('ws connection closed with exception %s' % member.connection.exception())
