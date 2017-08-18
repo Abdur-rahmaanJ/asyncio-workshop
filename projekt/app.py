@@ -1,12 +1,14 @@
-import json
-
 import asyncio
 import aiohttp_autoreload
 from aiohttp import web
 
-from projekt.models import ChatHandler
+from models import ChatHandler
 
-handler = ChatHandler()
+
+class ChatApplication(web.Application):
+    def __init__(self, *, chat_handler=None, **kwargs):
+        super().__init__(**kwargs)
+        self.chat_handler = chat_handler or ChatHandler()
 
 
 async def index(request):
@@ -22,6 +24,7 @@ async def reconnecting_websocket(request):
 
 
 async def members(request):
+    handler = request.app.chat_handler
     return web.json_response(list(sorted(handler.members.keys())))
 
 
@@ -29,16 +32,17 @@ async def rooms(request):
     return web.json_response([])
 
 
-def create_app(loop=None):
+def create_app(loop=None, chat_handler=None):
     if loop is None:
         loop = asyncio.get_event_loop()
-    app = web.Application(loop=loop)
+
+    app = ChatApplication(loop=loop, chat_handler=chat_handler)
     app.router.add_get('/', index)
     app.router.add_get('/members', members)
     app.router.add_get('/rooms', rooms)
     app.router.add_get('/style.css', css)
     app.router.add_get('/reconnecting-websocket.min.js', reconnecting_websocket)
-    app.router.add_get('/ws', handler.handle)
+    app.router.add_get('/ws', app.chat_handler.handle)
     return app
 
 

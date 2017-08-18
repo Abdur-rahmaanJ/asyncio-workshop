@@ -1,3 +1,4 @@
+from .models import ChatHandler, ChatRoom
 from .app import create_app
 
 
@@ -35,3 +36,16 @@ async def test_get_list_of_nicknames(test_client):
         'FooBar',
         'JohnDoe'
     ]
+
+
+async def test_get_previous_messages_on_room_join(test_client):
+    room_name = ChatHandler.GLOBAL_ROOM_NAME
+    previous_message = {'message': 'Test', 'nickname': 'Alibaba'}
+    room = ChatRoom(room_name, messages=[previous_message])
+    handler = ChatHandler()
+    handler.rooms[room_name] = room
+
+    client = await test_client(create_app, chat_handler=handler)
+    connection = await client.ws_connect('/ws?nickname=JohnDoe')
+    data = await connection.receive_json(timeout=0.2)
+    assert data == previous_message
