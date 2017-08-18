@@ -7,7 +7,7 @@ async def test_receives_sent_message(test_client):
 
     message = 'Hello, world!'
     await connection.send_json({'message': message, 'from': 'JohnDoe'})
-    response = await connection.receive_json()
+    response = await connection.receive_json(timeout=0.2)
 
     assert response['message'] == message
 
@@ -32,6 +32,6 @@ async def test_get_list_of_nicknames(test_client):
     response = await client.get('/members')
     data = await response.json()
     assert data == [
-        'JohnDoe',
-        'FooBar'
+        'FooBar',
+        'JohnDoe'
     ]

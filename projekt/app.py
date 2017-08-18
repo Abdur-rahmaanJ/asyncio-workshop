@@ -2,38 +2,11 @@ import json
 
 import asyncio
 import aiohttp_autoreload
-from aiohttp import (
-    web,
-    WSMsgType
-)
+from aiohttp import web
 
+from projekt.models import ChatHandler
 
-connections = set()
-
-
-async def websocket_handler(request):
-    ws = web.WebSocketResponse()
-    await ws.prepare(request)
-
-    # ws.close() - closes connection
-    # ws.send_str(str) - sends a str
-    connections.add(ws)
-
-    async for msg in ws:
-        # msg.type - type of a message. See WSMsgType
-        # msg.data - data received
-
-        if msg.type == WSMsgType.TEXT:
-            data = json.loads(msg.data)
-            for connection in connections:
-                await connection.send_json(data)
-        elif msg.type == WSMsgType.ERROR:
-            print('ws connection closed with exception %s' % ws.exception())
-        elif msg.type == WSMsgType.CLOSED:
-            print('closing connection')
-            connections.remove(ws)
-
-    return ws
+handler = ChatHandler()
 
 
 async def index(request):
@@ -49,7 +22,7 @@ async def reconnecting_websocket(request):
 
 
 async def members(request):
-    return web.json_response([])
+    return web.json_response(list(sorted(handler.members.keys())))
 
 
 async def rooms(request):
@@ -65,7 +38,7 @@ def create_app(loop=None):
     app.router.add_get('/rooms', rooms)
     app.router.add_get('/style.css', css)
     app.router.add_get('/reconnecting-websocket.min.js', reconnecting_websocket)
-    app.router.add_get('/ws', websocket_handler)
+    app.router.add_get('/ws', handler.handle)
     return app
 
 
