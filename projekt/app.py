@@ -18,7 +18,7 @@ async def websocket_handler(request):
 
         if msg.type == WSMsgType.TEXT:
             await ws.send_json(
-                {'message': 'response from the server', 'from': 'anonymous'}
+                {'message': 'Hello, world!', 'from': 'anonymous'}
             )
         elif msg.type == WSMsgType.ERROR:
             print('ws connection closed with exception %s' % ws.exception())
